@@ -17,6 +17,10 @@ import {
   CreditCard,
   Receipt,
   Edit3,
+  AlertTriangle,
+  CheckCircle2,
+  PauseCircle,
+  Wrench,
 } from 'lucide-react';
 import { useShifts } from '../context/ShiftContext';
 import {

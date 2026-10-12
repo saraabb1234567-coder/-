@@ -275,6 +275,7 @@ export interface AppSettings {
   // Admin PIN / эрх хамгаалалт (Үнэ өөрчлөхөд)
   isAdminMode: boolean;
   adminUsername: string;
+  adminPassword?: string;
 }
 
 export interface EmployeeMonthlyStats {
@@ -371,4 +372,81 @@ export interface ManagerHandoverRecord {
   notes?: string;
   createdAt: string;
 }
+
+/* =========================================================
+   ШТС: ХОШУУНЫ ТӨЛӨВ, САВНЫ БАГТААМЖ, МАСТШАП, БУУЛГАЛТ
+   ========================================================= */
+
+export type NozzleStatus = 'active' | 'paused' | 'empty' | 'maintenance';
+
+export interface FuelNozzle {
+  id: string;
+  nozzleNumber: string; // "№1", "№2", "№3", etc.
+  dispenserName: string; // "Түгээгүүр 1", "Түгээгүүр 2"
+  fuelType: string; // "АИ-92", "Дизель түлш", etc.
+  tankId?: string; // Савтай холбогдсон ID
+  status: NozzleStatus; // 'active' | 'paused' | 'empty' | 'maintenance'
+  currentMeterReading?: number; // Одоогийн лангууны заалт (милль)
+  lastStatusChangeReason?: string;
+  updatedAt: string;
+}
+
+export type TankStatus = 'normal' | 'low_warning' | 'critical_empty' | 'high_warning' | 'full';
+
+export interface FuelTank {
+  id: string;
+  tankNumber: string; // "Сав #1", "Сав #2"
+  fuelType: string; // "АИ-92", "АИ-95", "Дизель түлш", "А-80"
+  totalCapacityLiters: number; // Савны нийт багтаамж (литр)
+  currentLiters: number; // Бодит үлдэгдэл (литр)
+  currentMastshapCm: number; // Мастшап хэмжилт (см)
+  litersPerCm: number; // 1 см-д дүйцэх литр (жишээ нь: 135)
+  minSafeThresholdLiters: number; // Аюулгүйн доод босго (литр)
+  maxSafeThresholdLiters: number; // Аюулгүйн дээд босго (литр)
+  status: TankStatus; // 'normal' | 'low_warning' | 'critical_empty' | 'high_warning' | 'full'
+  lastMeasurementDate?: string;
+  notes?: string;
+  updatedAt: string;
+}
+
+export interface MastshapMeasurementLog {
+  id: string;
+  tankId: string;
+  tankNumber: string;
+  fuelType: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  measuredCm: number; // Хэмжсэн см
+  calculatedLiters: number; // Тооцсон литр = measuredCm * litersPerCm
+  systemLitersBefore: number; // Хэмжилтээс өмнөх системийн үлдэгдэл
+  differenceLiters: number; // Зөрүү литр
+  waterLevelCm: number; // Усны түвшин (см)
+  temperatureC?: number; // Шатахууны температур (°C)
+  measuredBy: string; // Хэмжилт хийсэн хүн
+  notes?: string;
+  createdAt: string;
+}
+
+export interface FuelDeliveryRecord {
+  id: string;
+  tankId: string;
+  tankNumber: string;
+  fuelType: string;
+  date: string;
+  time: string;
+  waybillNumber: string; // Дагалдах хуудас №
+  supplierName: string; // Нийлүүлэгч компани
+  tankerPlateNumber: string; // Машины улсын дугаар
+  driverName: string;
+  orderedLiters: number; // Захиалсан литр
+  deliveredLiters: number; // Буулгасан литр
+  mastshapBeforeCm: number; // Буулгахын өмнөх мастшап (см)
+  mastshapAfterCm: number; // Буулгасны дараах мастшап (см)
+  density?: number; // Нягт (г/см3)
+  temperatureC?: number; // Температур °C
+  acceptedBy: string; // Хүлээн авсан эрхлэгч
+  notes?: string;
+  createdAt: string;
+}
+
 

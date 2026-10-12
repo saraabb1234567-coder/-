@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Menu,
   ChevronLeft,
@@ -12,6 +12,8 @@ import {
   Fuel,
   User,
   ShieldCheck,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { useShifts } from '../context/ShiftContext';
 import {
@@ -21,6 +23,7 @@ import {
 } from '../utils/dateUtils';
 import { exportMonthScheduleToCSV, downloadFile } from '../utils/scheduler';
 import { TabType } from './Sidebar';
+import { AdminAuthModal } from './modals/AdminAuthModal';
 
 const TAB_TITLES: Record<TabType, { title: string; subtitle: string }> = {
   dashboard: { title: 'Хянах самбар', subtitle: 'ШТС ерөнхий тойм' },
@@ -37,6 +40,8 @@ const TAB_TITLES: Record<TabType, { title: string; subtitle: string }> = {
   reports: { title: 'Тайлан & Шинжилгээ', subtitle: 'Борлуулалт, касс ба ачааллын тайлан' },
   employees: { title: 'Ажилтнуудын бүртгэл', subtitle: 'Ажилтнууд, хос багууд ба төлөв' },
   settings: { title: 'Системийн тохиргоо', subtitle: 'Шатахууны үнэ, тохиргоо ба нөөцлөлт' },
+  tanks: { title: 'Савны багтаамж, Хошууны төлөв & Мастшап', subtitle: 'Савны бодит үлдэгдэл, 4 төлөв, босго ба буулгалт' },
+  guide: { title: 'Систем ашиглах заавар', subtitle: '17 бүлэг дэлгэрэнгүй зааварчилгаа & гарын авлага' },
 };
 
 interface HeaderProps {
@@ -67,7 +72,11 @@ export const Header: React.FC<HeaderProps> = ({
     employees,
     groups,
     settings,
+    isAdminUnlocked,
+    lockAdminMode,
   } = useShifts();
+
+  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
 
   const today = parseDateString(getTodayString());
   const isCurrentMonthSelected =
@@ -152,6 +161,35 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
+        {/* Admin Mode Lock/Unlock Toggle Button */}
+        <button
+          onClick={() => {
+            if (isAdminUnlocked) {
+              lockAdminMode();
+            } else {
+              setIsAdminAuthModalOpen(true);
+            }
+          }}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-2xs ${
+            isAdminUnlocked
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+              : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+          }`}
+          title={isAdminUnlocked ? 'Админ горим нээлттэй (Дарж түгжих)' : 'Админ горим түгжээтэй (Дарж нээх)'}
+        >
+          {isAdminUnlocked ? (
+            <>
+              <Unlock className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Админ нээлттэй</span>
+            </>
+          ) : (
+            <>
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              <span className="hidden sm:inline">Админ түгжээтэй</span>
+            </>
+          )}
+        </button>
+
         {/* User / Station badge */}
         <div className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-200 text-xs">
           <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
@@ -167,6 +205,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      <AdminAuthModal
+        isOpen={isAdminAuthModalOpen}
+        onClose={() => setIsAdminAuthModalOpen(false)}
+      />
     </header>
   );
 };

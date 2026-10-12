@@ -14,6 +14,8 @@ import {
   BarChart3,
   Users,
   Settings,
+  Layers,
+  BookOpen,
   CalendarPlus,
   X,
   ChevronLeft,
@@ -31,6 +33,7 @@ export type TabType =
   | 'payroll'
   | 'fuel_sales'
   | 'oil_products'
+  | 'tanks'
   | 'pos_settlement'
   | 'bank_settlement'
   | 'cash_settlement'
@@ -38,7 +41,8 @@ export type TabType =
   | 'manager_handover'
   | 'reports'
   | 'employees'
-  | 'settings';
+  | 'settings'
+  | 'guide';
 
 interface SidebarProps {
   currentTab: TabType;
@@ -69,6 +73,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     fuelPrices,
     posRecords,
     bankTransactions,
+    tanks,
+    nozzles,
   } = useShifts();
 
   const todayStr = getTodayString();
@@ -93,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const activeCount = employees.filter((e) => e.status === 'active').length;
   const todayHandovers = handovers.filter((h) => h.date === todayStr);
 
-  // 14 distinct menus exactly as requested
+  // 16 distinct menus exactly as requested
   const navSections = [
     {
       title: 'ҮНДСЭН МОДУЛЬ',
@@ -129,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: 'БОРЛУУЛАЛТ & БАРАА',
+      title: 'БОРЛУУЛАЛТ & ШАТАХУУН',
       items: [
         {
           id: 'fuel_sales' as TabType,
@@ -145,6 +151,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: Droplets,
           badge: `${oilProducts.length} бараа`,
         },
+        {
+          id: 'tanks' as TabType,
+          label: '7. Сав, хошуу & мастшап',
+          shortLabel: 'Сав, хошуу',
+          icon: Layers,
+          badge: `${tanks.length} сав`,
+        },
       ],
     },
     {
@@ -152,21 +165,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         {
           id: 'pos_settlement' as TabType,
-          label: '7. POS төхөөрөмжийн тооцоо',
+          label: '8. POS төхөөрөмжийн тооцоо',
           shortLabel: 'POS',
           icon: CreditCard,
           badge: `${posRecords.length} терминал`,
         },
         {
           id: 'bank_settlement' as TabType,
-          label: '8. Банкны дансны тооцоо',
+          label: '9. Банкны дансны тооцоо',
           shortLabel: 'Данс',
           icon: Building2,
           badge: `${bankTransactions.length} гүйлгээ`,
         },
         {
           id: 'cash_settlement' as TabType,
-          label: '9. Бэлэн мөнгөний тооцоо',
+          label: '10. Бэлэн мөнгөний тооцоо',
           shortLabel: 'Бэлэн',
           icon: Banknote,
           badge: 'Дэвсгэрт',
@@ -178,38 +191,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         {
           id: 'handover' as TabType,
-          label: '10. Ээлж хүлээлцэх',
+          label: '11. Ээлж хүлээлцэх',
           shortLabel: 'Хүлээлцэх',
           icon: ArrowLeftRight,
           badge: todayHandovers.length > 0 ? `${todayHandovers.length}` : null,
         },
         {
           id: 'manager_handover' as TabType,
-          label: '11. Эрхлэгчид мөнгө хүлээлгэх',
+          label: '12. Эрхлэгчид мөнгө хүлээлгэх',
           shortLabel: 'Эрхлэгч',
           icon: ShieldCheck,
           badge: 'Акт',
         },
         {
           id: 'reports' as TabType,
-          label: '12. Тайлан',
+          label: '13. Тайлан',
           shortLabel: 'Тайлан',
           icon: BarChart3,
           badge: null,
         },
+      ],
+    },
+    {
+      title: 'СИСТЕМ & ЗААВАР',
+      items: [
         {
           id: 'employees' as TabType,
-          label: '13. Ажилтнууд',
+          label: '14. Ажилтнууд',
           shortLabel: 'Ажилтнууд',
           icon: Users,
           badge: `${activeCount}/${employees.length}`,
         },
         {
           id: 'settings' as TabType,
-          label: '14. Тохиргоо',
+          label: '15. Тохиргоо',
           shortLabel: 'Тохиргоо',
           icon: Settings,
           badge: null,
+        },
+        {
+          id: 'guide' as TabType,
+          label: '16. Заавар (Гарын авлага)',
+          shortLabel: 'Заавар',
+          icon: BookOpen,
+          badge: '17 бүлэг',
         },
       ],
     },

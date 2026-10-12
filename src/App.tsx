@@ -14,6 +14,8 @@ import { BankSettlementView } from './components/BankSettlementView';
 import { CashSettlementView } from './components/CashSettlementView';
 import { ManagerHandoverView } from './components/ManagerHandoverView';
 import { ReportsView } from './components/ReportsView';
+import { TanksAndNozzlesView } from './components/TanksAndNozzlesView';
+import { UserGuideView } from './components/UserGuideView';
 import { EmployeeManagement } from './components/EmployeeManagement';
 import { GroupManagement } from './components/GroupManagement';
 import { SettingsView } from './components/SettingsView';
@@ -37,6 +39,7 @@ const VALID_TABS: TabType[] = [
   'payroll',
   'fuel_sales',
   'oil_products',
+  'tanks',
   'pos_settlement',
   'bank_settlement',
   'cash_settlement',
@@ -45,6 +48,7 @@ const VALID_TABS: TabType[] = [
   'reports',
   'employees',
   'settings',
+  'guide',
 ];
 
 const STORAGE_TAB_KEY = 'mongolian_gas_station_active_tab';
@@ -174,7 +178,10 @@ function MainApp() {
             {/* 6. Тос, нэмэлт бүтээгдэхүүн */}
             {currentTab === 'oil_products' && <OilProductsView />}
 
-            {/* 7. POS төхөөрөмжийн тооцоо */}
+            {/* 7. Сав, хошуу & мастшап */}
+            {currentTab === 'tanks' && <TanksAndNozzlesView />}
+
+            {/* 8. POS төхөөрөмжийн тооцоо */}
             {currentTab === 'pos_settlement' && <PosSettlementView />}
 
             {/* 8. Банкны дансны тооцоо */}
@@ -215,11 +222,16 @@ function MainApp() {
               </div>
             )}
 
-            {/* 14. Тохиргоо */}
+            {/* 15. Тохиргоо */}
             {currentTab === 'settings' && (
               <SettingsView
                 onOpenConfirmReset={() => setIsResetConfirmOpen(true)}
               />
+            )}
+
+            {/* 16. Заавар (Гарын авлага) */}
+            {currentTab === 'guide' && (
+              <UserGuideView onNavigateTab={handleSelectTab} />
             )}
           </main>
         </div>

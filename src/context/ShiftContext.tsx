@@ -29,6 +29,12 @@ import {
   BankTransactionRecord,
   CashDrawerRecord,
   ManagerHandoverRecord,
+  FuelNozzle,
+  FuelTank,
+  MastshapMeasurementLog,
+  FuelDeliveryRecord,
+  NozzleStatus,
+  TankStatus,
 } from '../types';
 import {
   DEFAULT_EMPLOYEES,
@@ -44,6 +50,10 @@ import {
   DEFAULT_BANK_TRANSACTIONS,
   DEFAULT_CASH_DRAWER_RECORDS,
   DEFAULT_MANAGER_HANDOVERS,
+  DEFAULT_NOZZLES,
+  DEFAULT_TANKS,
+  DEFAULT_MASTSHAP_LOGS,
+  DEFAULT_DELIVERY_RECORDS,
   getInitialShifts,
   getInitialHandovers,
   getInitialAttendance,
@@ -155,6 +165,33 @@ interface ShiftContextType {
   addManagerHandover: (handover: Omit<ManagerHandoverRecord, 'id' | 'createdAt'>) => void;
   confirmManagerHandover: (id: string) => void;
   deleteManagerHandover: (id: string) => void;
+
+  // ШТС: Хошууны төлөв & удирдлага
+  nozzles: FuelNozzle[];
+  updateNozzleStatus: (id: string, status: NozzleStatus, reason?: string) => void;
+  addNozzle: (noz: Omit<FuelNozzle, 'id' | 'updatedAt'>) => void;
+  updateNozzle: (id: string, updates: Partial<FuelNozzle>) => void;
+  deleteNozzle: (id: string) => void;
+
+  // ШТС: Савны багтаамж & Аюулгүйн босго
+  tanks: FuelTank[];
+  addTank: (tank: Omit<FuelTank, 'id' | 'updatedAt' | 'status'>) => void;
+  updateTank: (id: string, updates: Partial<FuelTank>) => void;
+  deleteTank: (id: string) => void;
+
+  // ШТС: Мастшапын хэмжилт
+  mastshapLogs: MastshapMeasurementLog[];
+  recordMastshapMeasurement: (log: Omit<MastshapMeasurementLog, 'id' | 'createdAt'>) => void;
+
+  // ШТС: Шатахуун буулгалт (Хүлээн авах)
+  deliveryRecords: FuelDeliveryRecord[];
+  recordFuelDelivery: (delivery: Omit<FuelDeliveryRecord, 'id' | 'createdAt'>) => void;
+
+  // ШТС: Админ эрх хамгаалалт & Нууц үг
+  isAdminUnlocked: boolean;
+  unlockAdminMode: (password: string) => boolean;
+  lockAdminMode: () => void;
+  changeAdminPassword: (oldPass: string, newPass: string) => boolean;
 
   // Navigation
   setSelectedYearMonth: (year: number, month: number) => void;
@@ -296,6 +333,31 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     loadStoredData<ManagerHandoverRecord[]>('manager_handovers', DEFAULT_MANAGER_HANDOVERS)
   );
 
+  // 16. ШТС: Хошууны төлөв
+  const [nozzles, setNozzles] = useState<FuelNozzle[]>(() =>
+    loadStoredData<FuelNozzle[]>('fuel_nozzles', DEFAULT_NOZZLES)
+  );
+
+  // 17. ШТС: Савны багтаамж & Аюулгүйн босго
+  const [tanks, setTanks] = useState<FuelTank[]>(() =>
+    loadStoredData<FuelTank[]>('fuel_tanks', DEFAULT_TANKS)
+  );
+
+  // 18. ШТС: Мастшапын хэмжилтийн түүх
+  const [mastshapLogs, setMastshapLogs] = useState<MastshapMeasurementLog[]>(() =>
+    loadStoredData<MastshapMeasurementLog[]>('mastshap_logs', DEFAULT_MASTSHAP_LOGS)
+  );
+
+  // 19. ШТС: Шатахуун буулгалт (Хүлээн авалт)
+  const [deliveryRecords, setDeliveryRecords] = useState<FuelDeliveryRecord[]>(() =>
+    loadStoredData<FuelDeliveryRecord[]>('delivery_records', DEFAULT_DELIVERY_RECORDS)
+  );
+
+  // 20. Админ эрх горим (Нууц үгээр онгойлгох)
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(() =>
+    loadStoredData<boolean>('admin_unlocked_session', true)
+  );
+
   // Auto-save to localStorage
   useEffect(() => saveStoredData('employees', employees), [employees]);
   useEffect(() => saveStoredData('groups', groups), [groups]);
@@ -316,6 +378,11 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => saveStoredData('bank_transactions', bankTransactions), [bankTransactions]);
   useEffect(() => saveStoredData('cash_drawer_records', cashDrawerRecords), [cashDrawerRecords]);
   useEffect(() => saveStoredData('manager_handovers', managerHandovers), [managerHandovers]);
+  useEffect(() => saveStoredData('fuel_nozzles', nozzles), [nozzles]);
+  useEffect(() => saveStoredData('fuel_tanks', tanks), [tanks]);
+  useEffect(() => saveStoredData('mastshap_logs', mastshapLogs), [mastshapLogs]);
+  useEffect(() => saveStoredData('delivery_records', deliveryRecords), [deliveryRecords]);
+  useEffect(() => saveStoredData('admin_unlocked_session', isAdminUnlocked), [isAdminUnlocked]);
 
   // Recalculate Payroll Calculations
   const payrollCalculations = useMemo(() => {
@@ -950,6 +1017,181 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setManagerHandovers((prev) => prev.filter((h) => h.id !== id));
   };
 
+  /* =========================================================
+     ШТС: ХОШУУНЫ ТӨЛӨВ БА УДИРДЛАГА
+     ========================================================= */
+  const updateNozzleStatus = (id: string, status: NozzleStatus, reason?: string) => {
+    setNozzles((prev) =>
+      prev.map((noz) =>
+        noz.id === id
+          ? {
+              ...noz,
+              status,
+              lastStatusChangeReason: reason || noz.lastStatusChangeReason,
+              updatedAt: new Date().toISOString(),
+            }
+          : noz
+      )
+    );
+  };
+
+  const addNozzle = (nozData: Omit<FuelNozzle, 'id' | 'updatedAt'>) => {
+    const newNoz: FuelNozzle = {
+      ...nozData,
+      id: `noz-${Date.now()}`,
+      updatedAt: new Date().toISOString(),
+    };
+    setNozzles((prev) => [...prev, newNoz]);
+  };
+
+  const updateNozzle = (id: string, updates: Partial<FuelNozzle>) => {
+    setNozzles((prev) =>
+      prev.map((noz) =>
+        noz.id === id
+          ? {
+              ...noz,
+              ...updates,
+              updatedAt: new Date().toISOString(),
+            }
+          : noz
+      )
+    );
+  };
+
+  const deleteNozzle = (id: string) => {
+    setNozzles((prev) => prev.filter((noz) => noz.id !== id));
+  };
+
+  /* =========================================================
+     ШТС: САВНЫ БАГТААМЖ, АЮУЛГҮЙН БОСГО БА МАСТШАП
+     ========================================================= */
+  const calculateTankStatus = (
+    currentLiters: number,
+    minSafeThreshold: number,
+    maxSafeThreshold: number
+  ): TankStatus => {
+    if (currentLiters <= 500) return 'critical_empty';
+    if (currentLiters < minSafeThreshold) return 'low_warning';
+    if (currentLiters >= maxSafeThreshold) return 'high_warning';
+    return 'normal';
+  };
+
+  const addTank = (tankData: Omit<FuelTank, 'id' | 'updatedAt' | 'status'>) => {
+    const initialStatus = calculateTankStatus(
+      tankData.currentLiters,
+      tankData.minSafeThresholdLiters,
+      tankData.maxSafeThresholdLiters
+    );
+    const newTank: FuelTank = {
+      ...tankData,
+      id: `tank-${Date.now()}`,
+      status: initialStatus,
+      updatedAt: new Date().toISOString(),
+    };
+    setTanks((prev) => [...prev, newTank]);
+  };
+
+  const updateTank = (id: string, updates: Partial<FuelTank>) => {
+    setTanks((prev) =>
+      prev.map((tank) => {
+        if (tank.id !== id) return tank;
+        const currentLiters = updates.currentLiters !== undefined ? updates.currentLiters : tank.currentLiters;
+        const minSafe = updates.minSafeThresholdLiters !== undefined ? updates.minSafeThresholdLiters : tank.minSafeThresholdLiters;
+        const maxSafe = updates.maxSafeThresholdLiters !== undefined ? updates.maxSafeThresholdLiters : tank.maxSafeThresholdLiters;
+        const status = calculateTankStatus(currentLiters, minSafe, maxSafe);
+
+        return {
+          ...tank,
+          ...updates,
+          status,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const deleteTank = (id: string) => {
+    setTanks((prev) => prev.filter((tank) => tank.id !== id));
+  };
+
+  const recordMastshapMeasurement = (logData: Omit<MastshapMeasurementLog, 'id' | 'createdAt'>) => {
+    const newLog: MastshapMeasurementLog = {
+      ...logData,
+      id: `mast-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setMastshapLogs((prev) => [newLog, ...prev]);
+
+    // Танкны бодит үлдэгдэл ба мастшап түвшинг автоматаар шинэчлэх
+    setTanks((prev) =>
+      prev.map((tank) => {
+        if (tank.id !== logData.tankId) return tank;
+        const newLiters = logData.calculatedLiters;
+        const status = calculateTankStatus(newLiters, tank.minSafeThresholdLiters, tank.maxSafeThresholdLiters);
+        return {
+          ...tank,
+          currentLiters: newLiters,
+          currentMastshapCm: logData.measuredCm,
+          status,
+          lastMeasurementDate: `${logData.date} ${logData.time}`,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const recordFuelDelivery = (deliveryData: Omit<FuelDeliveryRecord, 'id' | 'createdAt'>) => {
+    const newDelivery: FuelDeliveryRecord = {
+      ...deliveryData,
+      id: `del-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setDeliveryRecords((prev) => [newDelivery, ...prev]);
+
+    // Танкад шатахуун нэмж буулгасан тул савны үлдэгдлийг нэмэгдүүлэх
+    setTanks((prev) =>
+      prev.map((tank) => {
+        if (tank.id !== deliveryData.tankId) return tank;
+        const newLiters = Math.min(tank.totalCapacityLiters, tank.currentLiters + deliveryData.deliveredLiters);
+        const newMastshap = deliveryData.mastshapAfterCm || tank.currentMastshapCm;
+        const status = calculateTankStatus(newLiters, tank.minSafeThresholdLiters, tank.maxSafeThresholdLiters);
+        return {
+          ...tank,
+          currentLiters: newLiters,
+          currentMastshapCm: newMastshap,
+          status,
+          lastMeasurementDate: `${deliveryData.date} ${deliveryData.time}`,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  /* =========================================================
+     ШТС: АДМИН ЭРХ БА НУУЦ ҮГИЙН ХАМГААЛАЛТ
+     ========================================================= */
+  const unlockAdminMode = (password: string): boolean => {
+    const currentPass = settings.adminPassword || 'admin123';
+    if (password === currentPass) {
+      setIsAdminUnlocked(true);
+      return true;
+    }
+    return false;
+  };
+
+  const lockAdminMode = () => {
+    setIsAdminUnlocked(false);
+  };
+
+  const changeAdminPassword = (oldPass: string, newPass: string): boolean => {
+    const currentPass = settings.adminPassword || 'admin123';
+    if (oldPass !== currentPass) {
+      return false;
+    }
+    updateSettings({ adminPassword: newPass });
+    return true;
+  };
+
   const resetToDemoData = () => {
     clearAllStoredData();
     setEmployees(DEFAULT_EMPLOYEES);
@@ -965,6 +1207,11 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setBankTransactions(DEFAULT_BANK_TRANSACTIONS);
     setCashDrawerRecords(DEFAULT_CASH_DRAWER_RECORDS);
     setManagerHandovers(DEFAULT_MANAGER_HANDOVERS);
+    setNozzles(DEFAULT_NOZZLES);
+    setTanks(DEFAULT_TANKS);
+    setMastshapLogs(DEFAULT_MASTSHAP_LOGS);
+    setDeliveryRecords(DEFAULT_DELIVERY_RECORDS);
+    setIsAdminUnlocked(true);
     const initialShifts = getInitialShifts(DEFAULT_EMPLOYEES, DEFAULT_GROUPS, DEFAULT_SETTINGS);
     setShifts(initialShifts);
     setHandovers(getInitialHandovers(initialShifts, DEFAULT_EMPLOYEES));
@@ -1037,6 +1284,23 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         addManagerHandover,
         confirmManagerHandover,
         deleteManagerHandover,
+        nozzles,
+        updateNozzleStatus,
+        addNozzle,
+        updateNozzle,
+        deleteNozzle,
+        tanks,
+        addTank,
+        updateTank,
+        deleteTank,
+        mastshapLogs,
+        recordMastshapMeasurement,
+        deliveryRecords,
+        recordFuelDelivery,
+        isAdminUnlocked,
+        unlockAdminMode,
+        lockAdminMode,
+        changeAdminPassword,
         setSelectedYearMonth,
         goToNextMonth,
         goToPrevMonth,
