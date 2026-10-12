@@ -1,0 +1,6 @@
+{
+  "name": "Ээлжийн хуваарийн систем",
+  "description": "Монгол хэл дээрх ажилтнуудын ээлжийн хуваарь төлөвлөлт, багийн тохиргоо, тэгш хуваарилалтын тайлан бүхий систем",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
