@@ -35,6 +35,7 @@ export const FuelSalesView: React.FC = () => {
   const {
     fuelShiftSales,
     recordFuelShiftSale,
+    updateFuelShiftSale,
     deleteFuelShiftSale,
     fuelPrices,
     employees,
@@ -48,6 +49,10 @@ export const FuelSalesView: React.FC = () => {
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingSale, setEditingSale] = useState<FuelShiftSale | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [fDate, setFDate] = useState(todayStr);
   const [fShiftType, setFShiftType] = useState<HandoverShiftType>('day');
   const [fFuelType, setFFuelType] = useState('АИ-92');
@@ -98,6 +103,9 @@ export const FuelSalesView: React.FC = () => {
   });
 
   const openAddSale = () => {
+    setEditingSale(null);
+    setFormError(null);
+    setIsSubmitting(false);
     const defaultFuel = fuelPrices.find((f) => f.fuelType === 'АИ-92') || fuelPrices[0];
     const currentPrice = defaultFuel ? defaultFuel.pricePerLiter : 2390;
     setFDate(todayStr);
@@ -120,6 +128,31 @@ export const FuelSalesView: React.FC = () => {
     setFPos(Math.round(800 * currentPrice) - 1000000);
     setFCoupon(0);
     setFNote('');
+    setShowAddModal(true);
+  };
+
+  const openEditSale = (sale: FuelShiftSale) => {
+    setEditingSale(sale);
+    setFormError(null);
+    setIsSubmitting(false);
+    setFDate(sale.date);
+    setFShiftType(sale.shiftType);
+    setFFuelType(sale.fuelType);
+    setFDispenser(sale.dispenserNumber);
+    setFEmployeeId(sale.employeeId);
+    setFTiers(sale.tiers && sale.tiers.length > 0 ? sale.tiers : [
+      {
+        id: `tier-${Date.now()}`,
+        tierLabel: 'Үндсэн тариф',
+        pricePerLiter: 2390,
+        litersSold: sale.totalLiters,
+        amount: sale.totalAmount,
+      }
+    ]);
+    setFCash(sale.paymentBreakdown.cash || 0);
+    setFPos(sale.paymentBreakdown.pos || 0);
+    setFCoupon(sale.paymentBreakdown.coupon || 0);
+    setFNote(sale.note || '');
     setShowAddModal(true);
   };
 
@@ -178,33 +211,69 @@ export const FuelSalesView: React.FC = () => {
 
   const handleSaveSale = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
     const totalLiters = fTiers.reduce((sum, t) => sum + (t.litersSold || 0), 0);
     const totalAmount = fTiers.reduce((sum, t) => sum + (t.amount || 0), 0);
 
     if (totalLiters <= 0) {
-      alert('Борлуулсан нийт литр 0-ээс их байх ёстой!');
+      setFormError('Борлуулсан нийт литр 0-ээс их байх ёстой!');
       return;
     }
 
-    recordFuelShiftSale({
-      date: fDate,
-      shiftType: fShiftType,
-      fuelType: fFuelType,
-      dispenserNumber: fDispenser,
-      tiers: fTiers,
-      totalLiters,
-      totalAmount,
-      employeeId: fEmployeeId,
-      paymentBreakdown: {
-        cash: Number(fCash),
-        pos: Number(fPos),
-        card: 0,
-        coupon: Number(fCoupon),
-      },
-      note: fNote.trim(),
-    });
+    if (fTiers.some((t) => t.pricePerLiter <= 0)) {
+      setFormError('Шатлал бүрийн 1 литрийн үнэ 0-ээс их байх ёстой!');
+      return;
+    }
 
-    setShowAddModal(false);
+    if (Number(fCash) < 0 || Number(fPos) < 0 || Number(fCoupon) < 0) {
+      setFormError('Төлбөрийн хэлбэрүүдийн дүн хасах утгатай байж болохгүй!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (editingSale) {
+        updateFuelShiftSale(editingSale.id, {
+          date: fDate,
+          shiftType: fShiftType,
+          fuelType: fFuelType,
+          dispenserNumber: fDispenser,
+          tiers: fTiers,
+          totalLiters,
+          totalAmount,
+          employeeId: fEmployeeId,
+          paymentBreakdown: {
+            cash: Number(fCash),
+            pos: Number(fPos),
+            card: 0,
+            coupon: Number(fCoupon),
+          },
+          note: fNote.trim(),
+        });
+      } else {
+        recordFuelShiftSale({
+          date: fDate,
+          shiftType: fShiftType,
+          fuelType: fFuelType,
+          dispenserNumber: fDispenser,
+          tiers: fTiers,
+          totalLiters,
+          totalAmount,
+          employeeId: fEmployeeId,
+          paymentBreakdown: {
+            cash: Number(fCash),
+            pos: Number(fPos),
+            card: 0,
+            coupon: Number(fCoupon),
+          },
+          note: fNote.trim(),
+        });
+      }
+      setShowAddModal(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -389,24 +458,49 @@ export const FuelSalesView: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs">
-                    <div className="flex items-center gap-1.5 text-slate-600">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 text-slate-600 mr-2">
                       <User className="w-3.5 h-3.5 text-slate-400" />
                       <span>Түгээгч:</span>
                       <strong className="text-slate-900">{emp?.name || 'Ажилтан'}</strong>
                     </div>
 
                     <button
-                      onClick={() => {
-                        if (confirm('Энэ борлуулалтын бүртгэлийг устгах уу?')) {
-                          deleteFuelShiftSale(sale.id);
-                        }
-                      }}
-                      className="text-slate-400 hover:text-rose-600 p-1 rounded hover:bg-slate-50 cursor-pointer"
-                      title="Устгах"
+                      onClick={() => openEditSale(sale)}
+                      className="text-slate-400 hover:text-blue-600 p-1.5 rounded hover:bg-slate-100 cursor-pointer"
+                      title="Засах"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Edit3 className="w-4 h-4" />
                     </button>
+
+                    {deleteConfirmId === sale.id ? (
+                      <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 px-2 py-1 rounded text-xs">
+                        <span className="text-rose-800 font-semibold text-[11px]">Устгах уу?</span>
+                        <button
+                          onClick={() => {
+                            deleteFuelShiftSale(sale.id);
+                            setDeleteConfirmId(null);
+                          }}
+                          className="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded font-bold text-[11px] cursor-pointer"
+                        >
+                          Тийм
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmId(null)}
+                          className="px-2 py-0.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded text-[11px] cursor-pointer"
+                        >
+                          Болих
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirmId(sale.id)}
+                        className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-slate-100 cursor-pointer"
+                        title="Устгах"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -504,10 +598,10 @@ export const FuelSalesView: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">
-                    Шатахууны борлуулалт шинээр бүртгэх
+                    {editingSale ? 'Шатахууны борлуулалтын бүртгэл засах' : 'Шатахууны борлуулалт шинээр бүртгэх'}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Бууны эхний/эцсийн тоолуур, олон шатлалт тариф ба төлбөрийн хэлбэр
+                    {editingSale ? 'Тоолуур, тариф ба төлбөрийн мэдээллийг өөрчлөх' : 'Бууны эхний/эцсийн тоолуур, олон шатлалт тариф ба төлбөрийн хэлбэр'}
                   </p>
                 </div>
               </div>
@@ -520,6 +614,12 @@ export const FuelSalesView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveSale} className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
+              {formError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700 block">Огноо:</label>
@@ -768,9 +868,10 @@ export const FuelSalesView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Хадгалах
+                  {isSubmitting ? 'Хадгалж байна...' : 'Хадгалах'}
                 </button>
               </div>
             </form>

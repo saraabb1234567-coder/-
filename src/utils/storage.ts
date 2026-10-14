@@ -330,7 +330,7 @@ export const DEFAULT_FUEL_PRICE_HISTORY: FuelPriceHistory[] = [
   },
 ];
 
-export const DEFAULT_OIL_SALES: OilSaleRecord[] = [
+export const DEMO_OIL_SALES: OilSaleRecord[] = [
   {
     id: 'os-1',
     date: '2026-10-11',
@@ -393,7 +393,10 @@ export const DEFAULT_OIL_SALES: OilSaleRecord[] = [
   },
 ];
 
-export const DEFAULT_FUEL_SHIFT_SALES: FuelShiftSale[] = [
+// Шинэ хэрэглээнд бодит өгөгдлийг цэвэр байлгах үүднээс анхдагч тосны борлуулалт хоосон байна
+export const DEFAULT_OIL_SALES: OilSaleRecord[] = [];
+
+export const DEMO_FUEL_SHIFT_SALES: FuelShiftSale[] = [
   {
     id: 'fss-1',
     date: '2026-10-11',
@@ -485,7 +488,9 @@ export const DEFAULT_FUEL_SHIFT_SALES: FuelShiftSale[] = [
   },
 ];
 
-export const DEFAULT_SETTLEMENTS: ShiftSettlement[] = [
+export const DEFAULT_FUEL_SHIFT_SALES: FuelShiftSale[] = [];
+
+export const DEMO_SETTLEMENTS: ShiftSettlement[] = [
   {
     id: 'set-2026-10-11-day',
     date: '2026-10-11',
@@ -505,11 +510,13 @@ export const DEFAULT_SETTLEMENTS: ShiftSettlement[] = [
   },
 ];
 
+export const DEFAULT_SETTLEMENTS: ShiftSettlement[] = [];
+
 /* =========================================================
    POS, БАНК, БЭЛЭН МӨНГӨ БА ЭРХЛЭГЧИД ТУШААХ АНХНЫ ӨГӨГДӨЛ
    ========================================================= */
 
-export const DEFAULT_POS_RECORDS: PosTerminalRecord[] = [
+export const DEMO_POS_RECORDS: PosTerminalRecord[] = [
   {
     id: 'pos-1',
     terminalName: 'Хаан банк Терминал №1',
@@ -559,7 +566,9 @@ export const DEFAULT_POS_RECORDS: PosTerminalRecord[] = [
   },
 ];
 
-export const DEFAULT_BANK_TRANSACTIONS: BankTransactionRecord[] = [
+export const DEFAULT_POS_RECORDS: PosTerminalRecord[] = [];
+
+export const DEMO_BANK_TRANSACTIONS: BankTransactionRecord[] = [
   {
     id: 'bank-1',
     bankName: 'Хаан банк (QPay QR)',
@@ -610,7 +619,9 @@ export const DEFAULT_BANK_TRANSACTIONS: BankTransactionRecord[] = [
   },
 ];
 
-export const DEFAULT_CASH_DRAWER_RECORDS: CashDrawerRecord[] = [
+export const DEFAULT_BANK_TRANSACTIONS: BankTransactionRecord[] = [];
+
+export const DEMO_CASH_DRAWER_RECORDS: CashDrawerRecord[] = [
   {
     id: 'cash-1',
     date: '2026-10-11',
@@ -638,7 +649,9 @@ export const DEFAULT_CASH_DRAWER_RECORDS: CashDrawerRecord[] = [
   },
 ];
 
-export const DEFAULT_MANAGER_HANDOVERS: ManagerHandoverRecord[] = [
+export const DEFAULT_CASH_DRAWER_RECORDS: CashDrawerRecord[] = [];
+
+export const DEMO_MANAGER_HANDOVERS: ManagerHandoverRecord[] = [
   {
     id: 'mh-1',
     receiptNumber: 'АКТ-20261011-01',
@@ -658,6 +671,8 @@ export const DEFAULT_MANAGER_HANDOVERS: ManagerHandoverRecord[] = [
     createdAt: '2026-10-11T20:55:00',
   },
 ];
+
+export const DEFAULT_MANAGER_HANDOVERS: ManagerHandoverRecord[] = [];
 
 /* =========================================================
    ШТС: ХОШУУ БА САВНЫ АНХНЫ ӨГӨГДӨЛ (ЖИШЭЭ ТОХИРГОО)
@@ -795,7 +810,7 @@ export const DEFAULT_TANKS: FuelTank[] = [
   },
 ];
 
-export const DEFAULT_MASTSHAP_LOGS: MastshapMeasurementLog[] = [
+export const DEMO_MASTSHAP_LOGS: MastshapMeasurementLog[] = [
   {
     id: 'mast-1',
     tankId: 'tank-1',
@@ -849,7 +864,9 @@ export const DEFAULT_MASTSHAP_LOGS: MastshapMeasurementLog[] = [
   },
 ];
 
-export const DEFAULT_DELIVERY_RECORDS: FuelDeliveryRecord[] = [
+export const DEFAULT_MASTSHAP_LOGS: MastshapMeasurementLog[] = [];
+
+export const DEMO_DELIVERY_RECORDS: FuelDeliveryRecord[] = [
   {
     id: 'del-1',
     tankId: 'tank-1',
@@ -872,6 +889,8 @@ export const DEFAULT_DELIVERY_RECORDS: FuelDeliveryRecord[] = [
     createdAt: '2026-10-10T15:20:00',
   },
 ];
+
+export const DEFAULT_DELIVERY_RECORDS: FuelDeliveryRecord[] = [];
 
 export function getInitialShifts(
   employees: Employee[],
@@ -1039,62 +1058,81 @@ export function getInitialPayrollData(
     notes: '2026 оны 10-р сарын цалингийн мөчлөг',
   };
 
-  const payments: PayrollPayment[] = [
-    {
-      id: 'pay-25-emp-1',
-      periodId: 'period-2026-10',
-      employeeId: 'emp-1',
-      paymentDate: '2026-10-25',
-      paymentType: 'primary_25',
-      calculatedAmount: 1800000,
-      paidAmount: 1800000,
-      status: 'completed',
-      note: '25-ны үндсэн цалингийн олголт',
-      createdAt: '2026-10-25T11:00:00',
-    },
-    {
-      id: 'pay-25-emp-2',
-      periodId: 'period-2026-10',
-      employeeId: 'emp-2',
-      paymentDate: '2026-10-25',
-      paymentType: 'primary_25',
-      calculatedAmount: 1600000,
-      paidAmount: 1600000,
-      status: 'completed',
-      note: '25-ны үндсэн цалингийн олголт',
-      createdAt: '2026-10-25T11:00:00',
-    },
-    {
-      id: 'pay-25-emp-3',
-      periodId: 'period-2026-10',
-      employeeId: 'emp-3',
-      paymentDate: '2026-10-25',
-      paymentType: 'primary_25',
-      calculatedAmount: 1700000,
-      paidAmount: 1700000,
-      status: 'completed',
-      note: '25-ны үндсэн цалингийн олголт',
-      createdAt: '2026-10-25T11:00:00',
-    },
-    {
-      id: 'pay-25-emp-4',
-      periodId: 'period-2026-10',
-      employeeId: 'emp-4',
-      paymentDate: '2026-10-25',
-      paymentType: 'primary_25',
-      calculatedAmount: 1500000,
-      paidAmount: 1500000,
-      status: 'completed',
-      note: '25-ны үндсэн цалингийн олголт',
-      createdAt: '2026-10-25T11:00:00',
-    },
-  ];
+  const payments: PayrollPayment[] = [];
 
   const calculations = employees.map((emp) =>
     calculateEmployeePayroll(emp, period.id, attendance, payments)
   );
 
   return { period, calculations, payments };
+}
+
+export const DEMO_PAYROLL_PAYMENTS: PayrollPayment[] = [
+  {
+    id: 'pay-25-emp-1',
+    periodId: 'period-2026-10',
+    employeeId: 'emp-1',
+    paymentDate: '2026-10-25',
+    paymentType: 'primary_25',
+    calculatedAmount: 1800000,
+    paidAmount: 1800000,
+    status: 'completed',
+    note: '25-ны үндсэн цалингийн олголт',
+    createdAt: '2026-10-25T11:00:00',
+  },
+  {
+    id: 'pay-25-emp-2',
+    periodId: 'period-2026-10',
+    employeeId: 'emp-2',
+    paymentDate: '2026-10-25',
+    paymentType: 'primary_25',
+    calculatedAmount: 1600000,
+    paidAmount: 1600000,
+    status: 'completed',
+    note: '25-ны үндсэн цалингийн олголт',
+    createdAt: '2026-10-25T11:00:00',
+  },
+  {
+    id: 'pay-25-emp-3',
+    periodId: 'period-2026-10',
+    employeeId: 'emp-3',
+    paymentDate: '2026-10-25',
+    paymentType: 'primary_25',
+    calculatedAmount: 1700000,
+    paidAmount: 1700000,
+    status: 'completed',
+    note: '25-ны үндсэн цалингийн олголт',
+    createdAt: '2026-10-25T11:00:00',
+  },
+  {
+    id: 'pay-25-emp-4',
+    periodId: 'period-2026-10',
+    employeeId: 'emp-4',
+    paymentDate: '2026-10-25',
+    paymentType: 'primary_25',
+    calculatedAmount: 1500000,
+    paidAmount: 1500000,
+    status: 'completed',
+    note: '25-ны үндсэн цалингийн олголт',
+    createdAt: '2026-10-25T11:00:00',
+  },
+];
+
+export const KNOWN_DEMO_IDS = new Set<string>([
+  'fss-1', 'fss-2', 'fss-3',
+  'os-1', 'os-2', 'os-3', 'os-4',
+  'set-2026-10-11-day',
+  'pos-1', 'pos-2', 'pos-3',
+  'bank-1', 'bank-2', 'bank-3',
+  'cash-1',
+  'mh-1',
+  'mast-1', 'mast-2', 'mast-3',
+  'del-1',
+  'pay-25-emp-1', 'pay-25-emp-2', 'pay-25-emp-3', 'pay-25-emp-4',
+]);
+
+export function isDemoId(id: string): boolean {
+  return KNOWN_DEMO_IDS.has(id);
 }
 
 export function loadStoredData<T>(key: string, defaultValue: T): T {

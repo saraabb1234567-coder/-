@@ -27,6 +27,7 @@ export const PosSettlementView: React.FC = () => {
   const {
     posRecords,
     addPosRecord,
+    updatePosRecord,
     settlePosRecord,
     deletePosRecord,
     employees,
@@ -38,6 +39,7 @@ export const PosSettlementView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBank, setSelectedBank] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<PosTerminalRecord | null>(null);
 
   // Form State
   const [terminalName, setTerminalName] = useState('Хаан банк Терминал №1');

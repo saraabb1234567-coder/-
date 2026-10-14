@@ -54,6 +54,17 @@ import {
   DEFAULT_TANKS,
   DEFAULT_MASTSHAP_LOGS,
   DEFAULT_DELIVERY_RECORDS,
+  DEMO_OIL_SALES,
+  DEMO_FUEL_SHIFT_SALES,
+  DEMO_SETTLEMENTS,
+  DEMO_POS_RECORDS,
+  DEMO_BANK_TRANSACTIONS,
+  DEMO_CASH_DRAWER_RECORDS,
+  DEMO_MANAGER_HANDOVERS,
+  DEMO_MASTSHAP_LOGS,
+  DEMO_DELIVERY_RECORDS,
+  DEMO_PAYROLL_PAYMENTS,
+  isDemoId,
   getInitialShifts,
   getInitialHandovers,
   getInitialAttendance,
@@ -137,6 +148,7 @@ interface ShiftContextType {
   // ШТС: Ээлжийн шатахууны борлуулалт & олон шатлалт үнэ
   fuelShiftSales: FuelShiftSale[];
   recordFuelShiftSale: (sale: Omit<FuelShiftSale, 'id' | 'createdAt'>) => void;
+  updateFuelShiftSale: (id: string, updates: Partial<FuelShiftSale>) => void;
   deleteFuelShiftSale: (id: string) => void;
 
   // ШТС: Ээлжийн нэгдсэн тооцоо (POS & Бэлэн мөнгө)
@@ -147,12 +159,14 @@ interface ShiftContextType {
   // ШТС: POS Төхөөрөмжийн тооцоо
   posRecords: PosTerminalRecord[];
   addPosRecord: (record: Omit<PosTerminalRecord, 'id' | 'createdAt'>) => void;
+  updatePosRecord: (id: string, updates: Partial<PosTerminalRecord>) => void;
   settlePosRecord: (id: string) => void;
   deletePosRecord: (id: string) => void;
 
   // ШТС: Банкны дансны тооцоо & QPay
   bankTransactions: BankTransactionRecord[];
   addBankTransaction: (tx: Omit<BankTransactionRecord, 'id' | 'createdAt'>) => void;
+  updateBankTransaction: (id: string, updates: Partial<BankTransactionRecord>) => void;
   reconcileBankTransaction: (id: string, reconciledBy: string) => void;
   deleteBankTransaction: (id: string) => void;
 
@@ -163,6 +177,7 @@ interface ShiftContextType {
   // ШТС: Эрхлэгчид мөнгө хүлээлгэн өгөх
   managerHandovers: ManagerHandoverRecord[];
   addManagerHandover: (handover: Omit<ManagerHandoverRecord, 'id' | 'createdAt'>) => void;
+  updateManagerHandover: (id: string, updates: Partial<ManagerHandoverRecord>) => void;
   confirmManagerHandover: (id: string) => void;
   deleteManagerHandover: (id: string) => void;
 
@@ -221,6 +236,9 @@ interface ShiftContextType {
   // Settings & System
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   resetToDemoData: () => void;
+  loadDemoData: () => void;
+  purgeDemoData: () => number;
+  importAllData: (data: any) => boolean;
 }
 
 const ShiftContext = createContext<ShiftContextType | undefined>(undefined);
@@ -562,6 +580,12 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       createdAt: new Date().toISOString(),
     };
     setFuelShiftSales((prev) => [newSale, ...prev]);
+  };
+
+  const updateFuelShiftSale = (id: string, updates: Partial<FuelShiftSale>) => {
+    setFuelShiftSales((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    );
   };
 
   const deleteFuelShiftSale = (id: string) => {
@@ -950,6 +974,12 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setPosRecords((prev) => [newRec, ...prev]);
   };
 
+  const updatePosRecord = (id: string, updates: Partial<PosTerminalRecord>) => {
+    setPosRecords((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+  };
+
   const settlePosRecord = (id: string) => {
     setPosRecords((prev) =>
       prev.map((p) =>
@@ -971,6 +1001,12 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       createdAt: new Date().toISOString(),
     };
     setBankTransactions((prev) => [newTx, ...prev]);
+  };
+
+  const updateBankTransaction = (id: string, updates: Partial<BankTransactionRecord>) => {
+    setBankTransactions((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+    );
   };
 
   const reconcileBankTransaction = (id: string, reconciledBy: string) => {
@@ -1001,6 +1037,12 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       createdAt: new Date().toISOString(),
     };
     setManagerHandovers((prev) => [newHandover, ...prev]);
+  };
+
+  const updateManagerHandover = (id: string, updates: Partial<ManagerHandoverRecord>) => {
+    setManagerHandovers((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, ...updates } : h))
+    );
   };
 
   const confirmManagerHandover = (id: string) => {
@@ -1200,17 +1242,17 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setOilProducts(DEFAULT_OIL_PRODUCTS);
     setFuelPrices(DEFAULT_FUEL_PRICES);
     setFuelPriceHistory(DEFAULT_FUEL_PRICE_HISTORY);
-    setOilSales(DEFAULT_OIL_SALES);
-    setFuelShiftSales(DEFAULT_FUEL_SHIFT_SALES);
-    setSettlements(DEFAULT_SETTLEMENTS);
-    setPosRecords(DEFAULT_POS_RECORDS);
-    setBankTransactions(DEFAULT_BANK_TRANSACTIONS);
-    setCashDrawerRecords(DEFAULT_CASH_DRAWER_RECORDS);
-    setManagerHandovers(DEFAULT_MANAGER_HANDOVERS);
+    setOilSales(DEMO_OIL_SALES);
+    setFuelShiftSales(DEMO_FUEL_SHIFT_SALES);
+    setSettlements(DEMO_SETTLEMENTS);
+    setPosRecords(DEMO_POS_RECORDS);
+    setBankTransactions(DEMO_BANK_TRANSACTIONS);
+    setCashDrawerRecords(DEMO_CASH_DRAWER_RECORDS);
+    setManagerHandovers(DEMO_MANAGER_HANDOVERS);
     setNozzles(DEFAULT_NOZZLES);
     setTanks(DEFAULT_TANKS);
-    setMastshapLogs(DEFAULT_MASTSHAP_LOGS);
-    setDeliveryRecords(DEFAULT_DELIVERY_RECORDS);
+    setMastshapLogs(DEMO_MASTSHAP_LOGS);
+    setDeliveryRecords(DEMO_DELIVERY_RECORDS);
     setIsAdminUnlocked(true);
     const initialShifts = getInitialShifts(DEFAULT_EMPLOYEES, DEFAULT_GROUPS, DEFAULT_SETTINGS);
     setShifts(initialShifts);
@@ -1218,8 +1260,108 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setAttendance(getInitialAttendance(initialShifts));
     const pData = getInitialPayrollData(DEFAULT_EMPLOYEES, [], DEFAULT_SETTINGS);
     setPayrollPeriod(pData.period);
-    setPayrollPayments(pData.payments);
+    setPayrollPayments(DEMO_PAYROLL_PAYMENTS);
     setAdjustmentsMap({});
+  };
+
+  const loadDemoData = () => {
+    setOilSales(DEMO_OIL_SALES);
+    setFuelShiftSales(DEMO_FUEL_SHIFT_SALES);
+    setSettlements(DEMO_SETTLEMENTS);
+    setPosRecords(DEMO_POS_RECORDS);
+    setBankTransactions(DEMO_BANK_TRANSACTIONS);
+    setCashDrawerRecords(DEMO_CASH_DRAWER_RECORDS);
+    setManagerHandovers(DEMO_MANAGER_HANDOVERS);
+    setMastshapLogs(DEMO_MASTSHAP_LOGS);
+    setDeliveryRecords(DEMO_DELIVERY_RECORDS);
+    setPayrollPayments(DEMO_PAYROLL_PAYMENTS);
+  };
+
+  const purgeDemoData = (): number => {
+    let count = 0;
+    setFuelShiftSales((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setOilSales((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setSettlements((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setPosRecords((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setBankTransactions((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setCashDrawerRecords((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setManagerHandovers((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setMastshapLogs((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setDeliveryRecords((prev) => {
+      const remaining = prev.filter((s) => !isDemoId(s.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    setPayrollPayments((prev) => {
+      const remaining = prev.filter((p) => !isDemoId(p.id));
+      count += prev.length - remaining.length;
+      return remaining;
+    });
+    return count;
+  };
+
+  const importAllData = (data: any): boolean => {
+    try {
+      if (!data || typeof data !== 'object') return false;
+      if (data.employees && Array.isArray(data.employees)) setEmployees(data.employees);
+      if (data.groups && Array.isArray(data.groups)) setGroups(data.groups);
+      if (data.settings && typeof data.settings === 'object') setSettings(data.settings);
+      if (data.shifts && typeof data.shifts === 'object') setShifts(data.shifts);
+      if (data.handovers && Array.isArray(data.handovers)) setHandovers(data.handovers);
+      if (data.attendance && Array.isArray(data.attendance)) setAttendance(data.attendance);
+      if (data.payrollPeriod && typeof data.payrollPeriod === 'object') setPayrollPeriod(data.payrollPeriod);
+      if (data.payrollPayments && Array.isArray(data.payrollPayments)) setPayrollPayments(data.payrollPayments);
+      if (data.oilProducts && Array.isArray(data.oilProducts)) setOilProducts(data.oilProducts);
+      if (data.oilSales && Array.isArray(data.oilSales)) setOilSales(data.oilSales);
+      if (data.fuelPrices && Array.isArray(data.fuelPrices)) setFuelPrices(data.fuelPrices);
+      if (data.fuelPriceHistory && Array.isArray(data.fuelPriceHistory)) setFuelPriceHistory(data.fuelPriceHistory);
+      if (data.fuelShiftSales && Array.isArray(data.fuelShiftSales)) setFuelShiftSales(data.fuelShiftSales);
+      if (data.settlements && Array.isArray(data.settlements)) setSettlements(data.settlements);
+      if (data.posRecords && Array.isArray(data.posRecords)) setPosRecords(data.posRecords);
+      if (data.bankTransactions && Array.isArray(data.bankTransactions)) setBankTransactions(data.bankTransactions);
+      if (data.cashDrawerRecords && Array.isArray(data.cashDrawerRecords)) setCashDrawerRecords(data.cashDrawerRecords);
+      if (data.managerHandovers && Array.isArray(data.managerHandovers)) setManagerHandovers(data.managerHandovers);
+      if (data.nozzles && Array.isArray(data.nozzles)) setNozzles(data.nozzles);
+      if (data.tanks && Array.isArray(data.tanks)) setTanks(data.tanks);
+      if (data.mastshapLogs && Array.isArray(data.mastshapLogs)) setMastshapLogs(data.mastshapLogs);
+      if (data.deliveryRecords && Array.isArray(data.deliveryRecords)) setDeliveryRecords(data.deliveryRecords);
+      return true;
+    } catch (e) {
+      console.error('Error importing data:', e);
+      return false;
+    }
   };
 
   const monthlyStats = useMemo(() => {
@@ -1266,22 +1408,26 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         updateFuelPrice,
         fuelShiftSales,
         recordFuelShiftSale,
+        updateFuelShiftSale,
         deleteFuelShiftSale,
         settlements,
         recordSettlement,
         verifySettlement,
         posRecords,
         addPosRecord,
+        updatePosRecord,
         settlePosRecord,
         deletePosRecord,
         bankTransactions,
         addBankTransaction,
+        updateBankTransaction,
         reconcileBankTransaction,
         deleteBankTransaction,
         cashDrawerRecords,
         saveCashDrawerRecord,
         managerHandovers,
         addManagerHandover,
+        updateManagerHandover,
         confirmManagerHandover,
         deleteManagerHandover,
         nozzles,
@@ -1320,6 +1466,9 @@ export const ShiftProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         generateSchedule,
         updateSettings,
         resetToDemoData,
+        loadDemoData,
+        purgeDemoData,
+        importAllData,
       }}
     >
       {children}

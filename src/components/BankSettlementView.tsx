@@ -14,6 +14,8 @@ import {
   ArrowDownLeft,
   X,
   CreditCard,
+  Edit3,
+  AlertTriangle,
 } from 'lucide-react';
 import { useShifts } from '../context/ShiftContext';
 import { BankTransactionRecord, HandoverShiftType } from '../types';
@@ -24,6 +26,7 @@ export const BankSettlementView: React.FC = () => {
   const {
     bankTransactions,
     addBankTransaction,
+    updateBankTransaction,
     reconcileBankTransaction,
     deleteBankTransaction,
     settings,
@@ -33,6 +36,10 @@ export const BankSettlementView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingTx, setEditingTx] = useState<BankTransactionRecord | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Form State
   const [bankName, setBankName] = useState('Хаан банк (QPay QR)');
