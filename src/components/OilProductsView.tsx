@@ -18,6 +18,7 @@ import {
   Clock,
   User,
   ShieldAlert,
+  AlertCircle,
 } from 'lucide-react';
 import { useShifts } from '../context/ShiftContext';
 import { OilProduct, OilSaleRecord, HandoverShiftType } from '../types';
@@ -47,6 +48,11 @@ export const OilProductsView: React.FC = () => {
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<OilProduct | null>(null);
   const [showSaleModal, setShowSaleModal] = useState(false);
+  const [productError, setProductError] = useState<string | null>(null);
+  const [saleError, setSaleError] = useState<string | null>(null);
+  const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
+  const [isSubmittingSale, setIsSubmittingSale] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Product Form State
   const [pName, setPName] = useState('');
@@ -110,6 +116,8 @@ export const OilProductsView: React.FC = () => {
     setPInitialStock(15);
     setPAddedStock(0);
     setPNote('');
+    setProductError(null);
+    setIsSubmittingProduct(false);
     setShowProductModal(true);
   };
 
@@ -123,17 +131,27 @@ export const OilProductsView: React.FC = () => {
     setPInitialStock(prod.initialStock);
     setPAddedStock(prod.addedStock);
     setPNote(prod.note || '');
+    setProductError(null);
+    setIsSubmittingProduct(false);
     setShowProductModal(true);
   };
 
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pName.trim()) return;
+    if (isSubmittingProduct) return;
 
-    if (pUnitPrice <= 0) {
-      alert('Нэгжийн үнэ 0-ээс их байх ёстой!');
+    if (!pName.trim()) {
+      setProductError('Бүтээгдэхүүний нэрийг оруулна уу!');
       return;
     }
+
+    if (pUnitPrice <= 0) {
+      setProductError('Нэгжийн үнэ 0-ээс их байх ёстой!');
+      return;
+    }
+
+    setIsSubmittingProduct(true);
+    setProductError(null);
 
     if (editingProduct) {
       updateOilProduct(editingProduct.id, {
@@ -160,6 +178,7 @@ export const OilProductsView: React.FC = () => {
       });
     }
 
+    setIsSubmittingProduct(false);
     setShowProductModal(false);
   };
 
@@ -171,18 +190,33 @@ export const OilProductsView: React.FC = () => {
     setOsEmployeeId(employees[0]?.id || '');
     setOsPaymentMethod('cash');
     setOsNote('');
+    setSaleError(null);
+    setIsSubmittingSale(false);
     setShowSaleModal(true);
   };
 
   const handleSaveSale = (e: React.FormEvent) => {
     e.preventDefault();
-    const prod = oilProducts.find((p) => p.id === osProductId);
-    if (!prod) return;
+    if (isSubmittingSale) return;
 
-    if (osQuantity <= 0) {
-      alert('Борлуулсан тоо хэмжээ 0-ээс их байна!');
+    const prod = oilProducts.find((p) => p.id === osProductId);
+    if (!prod) {
+      setSaleError('Бүтээгдэхүүн сонгогдоогүй байна!');
       return;
     }
+
+    if (osQuantity <= 0) {
+      setSaleError('Борлуулсан тоо хэмжээ 0-ээс их байна!');
+      return;
+    }
+
+    if (prod.currentStock < osQuantity) {
+      setSaleError(`Үлдэгдэл хүрэлцэхгүй байна! Боломжит үлдэгдэл: ${prod.currentStock}`);
+      return;
+    }
+
+    setIsSubmittingSale(true);
+    setSaleError(null);
 
     recordOilSale({
       date: osDate,
@@ -197,6 +231,7 @@ export const OilProductsView: React.FC = () => {
       note: osNote.trim(),
     });
 
+    setIsSubmittingSale(false);
     setShowSaleModal(false);
   };
 
@@ -529,17 +564,33 @@ export const OilProductsView: React.FC = () => {
                         {sale.note || '-'}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => {
-                            if (confirm('Энэ борлуулалтыг устгаж, үлдэгдлийг буцаах уу?')) {
-                              deleteOilSale(sale.id);
-                            }
-                          }}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
-                          title="Устгах"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {deleteConfirmId === sale.id ? (
+                          <div className="flex items-center gap-1 justify-end">
+                            <button
+                              onClick={() => {
+                                deleteOilSale(sale.id);
+                                setDeleteConfirmId(null);
+                              }}
+                              className="px-2 py-0.5 bg-rose-600 text-white hover:bg-rose-700 rounded text-[10px] font-bold cursor-pointer"
+                            >
+                              Тийм, устгах
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(null)}
+                              className="px-2 py-0.5 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded text-[10px] font-medium cursor-pointer"
+                            >
+                              Болих
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteConfirmId(sale.id)}
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
+                            title="Устгах"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -577,6 +628,12 @@ export const OilProductsView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveProduct} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {productError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{productError}</span>
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 block">
                   Бүтээгдэхүүний нэр: * (Жишээ: Kixx 5W-30, 10W-30, ATF, Тосол, Шил арчигч)
@@ -686,9 +743,10 @@ export const OilProductsView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isSubmittingProduct}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  {editingProduct ? 'Хадгалах' : 'Нэмэх'}
+                  {isSubmittingProduct ? 'Хадгалж байна...' : editingProduct ? 'Хадгалах' : 'Нэмэх'}
                 </button>
               </div>
             </form>
@@ -721,6 +779,12 @@ export const OilProductsView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveSale} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {saleError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{saleError}</span>
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 block">Бүтээгдэхүүн сонгох: *</label>
                 <select
@@ -849,9 +913,10 @@ export const OilProductsView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isSubmittingSale}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Бүртгэх
+                  {isSubmittingSale ? 'Бүртгэж байна...' : 'Бүртгэх'}
                 </button>
               </div>
             </form>

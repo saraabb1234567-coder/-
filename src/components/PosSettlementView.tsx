@@ -17,6 +17,7 @@ import {
   X,
   FileText,
   Printer,
+  AlertCircle,
 } from 'lucide-react';
 import { useShifts } from '../context/ShiftContext';
 import { PosTerminalRecord, HandoverShiftType } from '../types';
@@ -52,6 +53,9 @@ export const PosSettlementView: React.FC = () => {
   const [totalAmount, setTotalAmount] = useState<number>(1250000);
   const [employeeId, setEmployeeId] = useState(employees[0]?.id || '');
   const [note, setNote] = useState('');
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Expected POS total from Shift Sales
   const expectedPosFromFuel = fuelShiftSales.reduce(
@@ -93,15 +97,26 @@ export const PosSettlementView: React.FC = () => {
     setTotalAmount(850000);
     setEmployeeId(employees[0]?.id || '');
     setNote('');
+    setModalError(null);
+    setIsSubmitting(false);
     setShowAddModal(true);
   };
 
   const handleSavePos = (e: React.FormEvent) => {
     e.preventDefault();
-    if (totalAmount <= 0) {
-      alert('Гүйлгээний нийт дүн 0-ээс их байна!');
+    if (isSubmitting) return;
+
+    if (!totalAmount || totalAmount <= 0) {
+      setModalError('Гүйлгээний нийт дүн 0-ээс их байна!');
       return;
     }
+    if (!employeeId) {
+      setModalError('Хариуцсан түгээгчийг сонгоно уу!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setModalError(null);
 
     addPosRecord({
       terminalName,
@@ -117,6 +132,7 @@ export const PosSettlementView: React.FC = () => {
       note: note.trim(),
     });
 
+    setIsSubmitting(false);
     setShowAddModal(false);
   };
 
@@ -328,17 +344,33 @@ export const PosSettlementView: React.FC = () => {
                       {rec.note || '-'}
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => {
-                          if (confirm('Энэ ПОС бүртгэлийг устгах уу?')) {
-                            deletePosRecord(rec.id);
-                          }
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
-                        title="Устгах"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {deleteConfirmId === rec.id ? (
+                        <div className="flex items-center gap-1 justify-end">
+                          <button
+                            onClick={() => {
+                              deletePosRecord(rec.id);
+                              setDeleteConfirmId(null);
+                            }}
+                            className="px-2 py-0.5 bg-rose-600 text-white hover:bg-rose-700 rounded text-[10px] font-bold cursor-pointer"
+                          >
+                            Тийм, устгах
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(null)}
+                            className="px-2 py-0.5 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded text-[10px] font-medium cursor-pointer"
+                          >
+                            Болих
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteConfirmId(rec.id)}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
+                          title="Устгах"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -375,6 +407,12 @@ export const PosSettlementView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSavePos} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {modalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{modalError}</span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700 block">Банк сонгох:</label>
@@ -514,9 +552,10 @@ export const PosSettlementView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Бүртгэх
+                  {isSubmitting ? 'Бүртгэж байна...' : 'Бүртгэх'}
                 </button>
               </div>
             </form>

@@ -21,6 +21,7 @@ import {
   X,
   Calendar,
   Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { useShifts } from '../context/ShiftContext';
 import {
@@ -73,6 +74,8 @@ export const AccountingView: React.FC = () => {
 
   const [showFuelSaleModal, setShowFuelSaleModal] = useState(false);
   const [showSettlementModal, setShowSettlementModal] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 1. Product Form state
   const [pName, setPName] = useState('');
@@ -146,6 +149,8 @@ export const AccountingView: React.FC = () => {
     setPInitialStock(10);
     setPAddedStock(0);
     setPNote('');
+    setModalError(null);
+    setIsSubmitting(false);
     setShowProductModal(true);
   };
 
@@ -159,17 +164,27 @@ export const AccountingView: React.FC = () => {
     setPInitialStock(prod.initialStock);
     setPAddedStock(prod.addedStock);
     setPNote(prod.note || '');
+    setModalError(null);
+    setIsSubmitting(false);
     setShowProductModal(true);
   };
 
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pName.trim()) return;
+    if (isSubmitting) return;
 
-    if (pUnitPrice <= 0) {
-      alert('Нэгжийн үнэ 0-ээс их байх ёстой!');
+    if (!pName.trim()) {
+      setModalError('Бүтээгдэхүүний нэрийг оруулна уу!');
       return;
     }
+
+    if (pUnitPrice <= 0) {
+      setModalError('Нэгжийн үнэ 0-ээс их байх ёстой!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setModalError(null);
 
     if (editingProduct) {
       updateOilProduct(editingProduct.id, {
@@ -196,6 +211,7 @@ export const AccountingView: React.FC = () => {
       });
     }
 
+    setIsSubmitting(false);
     setShowProductModal(false);
   };
 
@@ -208,18 +224,33 @@ export const AccountingView: React.FC = () => {
     setOsEmployeeId(employees[0]?.id || '');
     setOsPaymentMethod('cash');
     setOsNote('');
+    setModalError(null);
+    setIsSubmitting(false);
     setShowOilSaleModal(true);
   };
 
   const handleSaveOilSale = (e: React.FormEvent) => {
     e.preventDefault();
-    const prod = oilProducts.find((p) => p.id === osProductId);
-    if (!prod) return;
+    if (isSubmitting) return;
 
-    if (osQuantity <= 0) {
-      alert('Борлуулсан тоо хэмжээ 0-ээс их байна!');
+    const prod = oilProducts.find((p) => p.id === osProductId);
+    if (!prod) {
+      setModalError('Бүтээгдэхүүн сонгогдоогүй байна!');
       return;
     }
+
+    if (osQuantity <= 0) {
+      setModalError('Борлуулсан тоо хэмжээ 0-ээс их байна!');
+      return;
+    }
+
+    if (prod.currentStock < osQuantity) {
+      setModalError(`Үлдэгдэл хүрэлцэхгүй байна! Боломжит үлдэгдэл: ${prod.currentStock}`);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setModalError(null);
 
     recordOilSale({
       date: osDate,
@@ -234,6 +265,7 @@ export const AccountingView: React.FC = () => {
       note: osNote.trim(),
     });
 
+    setIsSubmitting(false);
     setShowOilSaleModal(false);
   };
 
@@ -247,20 +279,27 @@ export const AccountingView: React.FC = () => {
       setFpEffectiveDateTime(`${todayStr}T00:00`);
       setFpReason('');
       setFpAdminConfirm(false);
+      setModalError(null);
+      setIsSubmitting(false);
       setShowFuelPriceModal(true);
     }
   };
 
   const handleSaveFuelPrice = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (fpNewPrice <= 0) {
-      alert('Шатахууны үнэ 0-ээс их байх ёстой!');
+      setModalError('Шатахууны үнэ 0-ээс их байх ёстой!');
       return;
     }
     if (!fpAdminConfirm) {
-      alert('Үнэ өөрчлөхийг баталгаажуулна уу!');
+      setModalError('Үнэ өөрчлөхийг баталгаажуулна уу!');
       return;
     }
+
+    setIsSubmitting(true);
+    setModalError(null);
 
     updateFuelPrice(
       fpFuelType,
@@ -270,6 +309,7 @@ export const AccountingView: React.FC = () => {
       settings.adminUsername || 'Эрхлэгч (Админ)'
     );
 
+    setIsSubmitting(false);
     setShowFuelPriceModal(false);
   };
 
@@ -1187,6 +1227,12 @@ export const AccountingView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveProduct} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {modalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{modalError}</span>
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 block">
                   Бүтээгдэхүүний нэр: * (Жишээ: Kixx 5W-30, 10W-30, ATF, Тосол, Шил арчигч)
@@ -1296,9 +1342,10 @@ export const AccountingView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  {editingProduct ? 'Хадгалах' : 'Нэмэх'}
+                  {isSubmitting ? 'Хадгалж байна...' : editingProduct ? 'Хадгалах' : 'Нэмэх'}
                 </button>
               </div>
             </form>
@@ -1331,6 +1378,12 @@ export const AccountingView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveOilSale} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {modalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{modalError}</span>
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 block">Бүтээгдэхүүн сонгох: *</label>
                 <select
@@ -1459,9 +1512,10 @@ export const AccountingView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Борлуулалт батлах
+                  {isSubmitting ? 'Батлаж байна...' : 'Борлуулалт батлах'}
                 </button>
               </div>
             </form>
@@ -1494,6 +1548,12 @@ export const AccountingView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveFuelPrice} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {modalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{modalError}</span>
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 block">Шатахууны төрөл: *</label>
                 <select
@@ -1579,10 +1639,10 @@ export const AccountingView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={!fpAdminConfirm}
+                  disabled={!fpAdminConfirm || isSubmitting}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Үнэ батлах & Түүхэнд бичих
+                  {isSubmitting ? 'Батлаж байна...' : 'Үнэ батлах & Түүхэнд бичих'}
                 </button>
               </div>
             </form>

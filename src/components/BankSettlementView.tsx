@@ -16,6 +16,7 @@ import {
   CreditCard,
   Edit3,
   AlertTriangle,
+  AlertCircle,
 } from 'lucide-react';
 import { useShifts } from '../context/ShiftContext';
 import { BankTransactionRecord, HandoverShiftType } from '../types';
@@ -37,7 +38,7 @@ export const BankSettlementView: React.FC = () => {
   const [selectedType, setSelectedType] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTx, setEditingTx] = useState<BankTransactionRecord | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -86,15 +87,26 @@ export const BankSettlementView: React.FC = () => {
     setCustomerInfo('');
     setReferenceNumber(`QP-${Date.now().toString().slice(-6)}`);
     setNote('');
+    setModalError(null);
+    setIsSubmitting(false);
     setShowAddModal(true);
   };
 
   const handleSaveTransaction = (e: React.FormEvent) => {
     e.preventDefault();
-    if (amount <= 0) {
-      alert('Гүйлгээний дүн 0-ээс их байх ёстой!');
+    if (isSubmitting) return;
+
+    if (!amount || amount <= 0) {
+      setModalError('Гүйлгээний дүн 0-ээс их байх ёстой!');
       return;
     }
+    if (!referenceNumber.trim()) {
+      setModalError('Гүйлгээний дугаар / утгыг оруулна уу!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setModalError(null);
 
     addBankTransaction({
       bankName,
@@ -111,6 +123,7 @@ export const BankSettlementView: React.FC = () => {
       note: note.trim() || undefined,
     });
 
+    setIsSubmitting(false);
     setShowAddModal(false);
   };
 
@@ -307,17 +320,33 @@ export const BankSettlementView: React.FC = () => {
                     )}
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => {
-                        if (confirm('Энэ гүйлгээний бүртгэлийг устгах уу?')) {
-                          deleteBankTransaction(tx.id);
-                        }
-                      }}
-                      className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
-                      title="Устгах"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {deleteConfirmId === tx.id ? (
+                      <div className="flex items-center gap-1 justify-end">
+                        <button
+                          onClick={() => {
+                            deleteBankTransaction(tx.id);
+                            setDeleteConfirmId(null);
+                          }}
+                          className="px-2 py-0.5 bg-rose-600 text-white hover:bg-rose-700 rounded text-[10px] font-bold cursor-pointer"
+                        >
+                          Тийм, устгах
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmId(null)}
+                          className="px-2 py-0.5 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded text-[10px] font-medium cursor-pointer"
+                        >
+                          Болих
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirmId(tx.id)}
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
+                        title="Устгах"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -353,6 +382,12 @@ export const BankSettlementView: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveTransaction} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {modalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{modalError}</span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700 block">Гүйлгээний төрөл:</label>
@@ -471,9 +506,10 @@ export const BankSettlementView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Хадгалах
+                  {isSubmitting ? 'Хадгалж байна...' : 'Хадгалах'}
                 </button>
               </div>
             </form>
